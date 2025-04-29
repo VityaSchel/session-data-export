@@ -1,6 +1,6 @@
 # Session messenger data export
 
-This CLI exported decrypted database file from Session messenger and decrypts attachments. This program only works with Session Desktop electron app.
+This CLI exports decrypted database file from Session messenger and decrypts attachments. This program only works with Session Desktop electron app.
 
 Based on my explanation [here](https://gist.github.com/VityaSchel/0d4dcf2ada60c3e1b05bd7ef15f0cfd1)
 
