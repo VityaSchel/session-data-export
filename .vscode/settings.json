@@ -6,6 +6,9 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
   "editor.quickSuggestions": {
     "strings": "on"
   },
@@ -26,6 +29,6 @@
   "eslint.validate": ["javascript", "typescript"],
   "search.exclude": {
     "**/.git": true,
-    "**/node_modules": true,
+    "**/node_modules": true
   }
 }

@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+html {
+  background-color: #121212;
+  color-scheme: dark;
+}
+
+@theme default {
+  --color-session: #00f782;
+}
