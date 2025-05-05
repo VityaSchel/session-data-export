@@ -6,3 +6,7 @@ export const formatConversationId = (id: string) => {
     return id
   }
 }
+
+export const sanitizeFilename = (filename: string) => {
+  return filename.replace(/[^a-zA-Zа-яА-Я0-9._-]/g, '_')
+}

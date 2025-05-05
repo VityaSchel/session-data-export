@@ -3,7 +3,7 @@ import path from 'path'
 import os from 'os'
 import Database from 'better-sqlite3-multiple-ciphers'
 import { decryptAttachmentBufferNode } from './decrypt.js'
-import { formatConversationId } from './utils.js'
+import { formatConversationId, sanitizeFilename } from './utils.js'
 
 export async function exportSessionData(args: {
   input?: string
@@ -217,10 +217,11 @@ export async function exportSessionData(args: {
       const usedTimes = usedFileNames.get(realFilename) ?? 0
       const suffix = usedTimes > 0 ? `_(${usedTimes})` : ''
       const extname = path.extname(realFilename)
-      const realFilenameWithSuffix =
+      const realFilenameWithSuffix = sanitizeFilename(
         (extname ? realFilename.slice(0, -extname.length) : realFilename) +
-        suffix +
-        extname
+          suffix +
+          extname,
+      )
       // if (!realFilenameWithSuffix) realFilenameWithSuffix = realFilename
       await fs.rename(
         path.join(attachmentsOutputDir, fileId),
