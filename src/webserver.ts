@@ -3,26 +3,13 @@ import fs from 'fs'
 import path from 'path'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { mimeTypes } from './mime-types'
 
 const port = process.env.PORT || 8080
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) + '/'
 const baseDir = path.resolve(__dirname, 'html')
 
-const mimeTypes: Record<string, string> = {
-  '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.txt': 'text/plain',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-}
 
 const server = http.createServer((req, res) => {
   if (!req.url) {

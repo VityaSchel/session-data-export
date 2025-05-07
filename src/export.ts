@@ -4,6 +4,8 @@ import os from 'os'
 import Database from 'better-sqlite3-multiple-ciphers'
 import { decryptAttachmentBufferNode } from './decrypt.js'
 import { formatConversationId, sanitizeFilename } from './utils.js'
+import { getExtension } from './mime-types.js'
+import { exec } from 'child_process'
 
 export async function exportSessionData(args: {
   input?: string
@@ -171,15 +173,23 @@ export async function exportSessionData(args: {
       try {
         const { attachments } = JSON.parse(message.json)
         for (const attachment of attachments) {
+          let filename = attachment.fileName
+          if (!attachment.fileName) {
+            const mimeType = attachment.contentType
+            const extension = getExtension(mimeType)
+            if (extension) {
+              filename = 'unnamed' + extension
+            }
+          }
           if (attachment.path) {
             mediaFileNames.set(path.basename(attachment.path), {
-              name: attachment.fileName,
+              name: filename,
               thumb: false,
             })
           }
           if (attachment.thumbnail) {
             mediaFileNames.set(path.basename(attachment.thumbnail.path), {
-              name: attachment.fileName,
+              name: filename,
               thumb: true,
             })
           }
@@ -205,34 +215,58 @@ export async function exportSessionData(args: {
       }
     }
     const usedFileNames: Map<string, number> = new Map()
-    let remappedFiles = 0
+    let originalFileNames = 0,
+      guessedFilenames = 0
     const remappingMap = new Map<string, string>()
     for (const fileId of fileNames) {
       const realFilenameObject = mediaFileNames.get(fileId)
-      if (!realFilenameObject) continue
-      if (realFilenameObject.name === 'map.json')
-        realFilenameObject.name = '_map.json'
-      const prefix = realFilenameObject.thumb ? 'thumb_' : ''
-      const realFilename = prefix + (realFilenameObject.name || 'unnamed')
-      const usedTimes = usedFileNames.get(realFilename) ?? 0
+      let newName
+      if (!realFilenameObject) {
+        const guessedMimeTypeParts = await new Promise<string | null>(
+          (resolve) =>
+            exec(
+              'file -Ib "' + path.join(attachmentsOutputDir, fileId) + '"',
+              (err, stdout) => {
+                if (err) resolve(null)
+                else resolve(stdout)
+              },
+            ),
+        )
+        if (guessedMimeTypeParts !== null) {
+          const guessedMimeType = guessedMimeTypeParts.split(';')[0]
+          if (guessedMimeType) {
+            const extension = getExtension(guessedMimeType)
+            if (extension) {
+              newName = 'guessed' + extension
+              guessedFilenames++
+            } else {
+              continue
+            }
+          } else {
+            continue
+          }
+        } else {
+          continue
+        }
+      } else {
+        if (realFilenameObject.name === 'map.json')
+          realFilenameObject.name = '_map.json'
+        const prefix = realFilenameObject.thumb ? 'thumb_' : ''
+        newName = prefix + (realFilenameObject.name || 'unnamed')
+        originalFileNames++
+      }
+      const usedTimes = usedFileNames.get(newName) ?? 0
       const suffix = usedTimes > 0 ? `_(${usedTimes})` : ''
-      const extname = path.extname(realFilename)
-      const realFilenameWithSuffix = sanitizeFilename(
-        (extname ? realFilename.slice(0, -extname.length) : realFilename) +
-          suffix +
-          extname,
+      const ext = path.extname(newName)
+      const resultName = sanitizeFilename(
+        (ext ? newName.slice(0, -ext.length) : newName) + suffix + ext,
       )
-      // if (!realFilenameWithSuffix) realFilenameWithSuffix = realFilename
       await fs.rename(
         path.join(attachmentsOutputDir, fileId),
-        path.join(attachmentsOutputDir, realFilenameWithSuffix),
+        path.join(attachmentsOutputDir, resultName),
       )
-      remappingMap.set(fileId, realFilenameWithSuffix)
-      usedFileNames.set(
-        realFilename,
-        (usedFileNames.get(realFilename) ?? 0) + 1,
-      )
-      remappedFiles++
+      remappingMap.set(fileId, resultName)
+      usedFileNames.set(newName, (usedFileNames.get(newName) ?? 0) + 1)
     }
     await fs.writeFile(
       path.join(attachmentsOutputDir, 'map.json'),
@@ -240,9 +274,7 @@ export async function exportSessionData(args: {
       'utf-8',
     )
     console.log(
-      'Successfully remapped ' +
-        remappedFiles +
-        ' files to their original names',
+      `Successfully remapped ${originalFileNames} files to their original names and guessed extensions for ${guessedFilenames} files (${originalFileNames + guessedFilenames}/${exportedFilenames})`,
     )
   }
 }
