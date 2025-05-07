@@ -8,5 +8,5 @@ export const formatConversationId = (id: string) => {
 }
 
 export const sanitizeFilename = (filename: string) => {
-  return filename.replace(/[^a-zA-Zа-яА-Я0-9._-]/g, '_')
+  return filename.replace(/[^a-zA-Zа-яА-Я0-9._()-]/g, '_')
 }
